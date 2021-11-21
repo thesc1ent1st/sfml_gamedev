@@ -1,145 +1,118 @@
 #include <iostream> 
 #include <vector>
 #include <string>
-#include <stdio.h> 
+#include <stdio.h>
+
+#include "character.h"
+#include "screen.h"
 
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Window/VideoMode.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include <SFML/Graphics.hpp>
 
-#define SCREENWIDTH 800
-#define SCREENHEIGHT 600
-
-#define SPRITE_HEIGHT 64.0
-#define SPRITE_WIDTH 64.0
-
-struct Cordinates {
-        float cur_x;
-        float cur_y;
-        float dx;
-        float dy;
-};
-
-struct Character {
-        std::vector<sf::Texture> texture;
-        sf::Texture cur_texture;
-        sf::Sprite sprite;
-        Cordinates loc;
-        size_t state;
+std::vector<std::string> p1_sprite_path = {
+        "./images/RunRight01.png",
+        "./images/RunRight02.png",
+        "./images/RunRight03.png",
+        "./images/RunRight04.png"
 };
 
 int gcd(int a, int b);
-bool init_player(Character& player, const std::vector<std::string>& sprite_file_loc, float height, float width);
-void update_current_texture(Character& player);
+void handle_key_code(sf::Keyboard::Key code, const Screen& screen, Character& p1);
 
 int main(int argc, char** argv)
 {
         sf::Music music;
-        sf::Keyboard kb;
-        Character p1;
-        std::vector<std::string> sprite_loc = {
-                "RunRight01.png",
-                "RunRight02.png",
-                "RunRight03.png",
-                "RunRight04.png"
-        };
 
-        sf::RenderWindow window(sf::VideoMode(SCREENWIDTH, SCREENHEIGHT), "Ginga Ninja");
-        if (!music.openFromFile("No6.ogg"))
-                return EXIT_FAILURE;
-
-        if (!init_player(p1, sprite_loc, SPRITE_HEIGHT, SPRITE_WIDTH))
+        Screen screen("Ginga Ninja");
+        Character p1(p1_sprite_path, 64.0, 64.0, 0, 0);
+        if (!music.openFromFile("./music/No6.ogg"))
                 return EXIT_FAILURE;
 
         music.play();
-        while (window.isOpen()) {
+        while (screen.window.isOpen()) {
                 sf::Event event;
-                while (window.pollEvent(event)) {
+                while (screen.window.pollEvent(event)) {
                         if (event.type == sf::Event::Closed)
-                                window.close();
+                                screen.window.close();
 
-                        if (event.type == sf::Event::KeyPressed) {
-                                switch (event.key.code) {
-                                case sf::Keyboard::Key::Up:
-                                        p1.loc.cur_y -= p1.loc.dy;
-                                        if (p1.loc.cur_y < -(SPRITE_HEIGHT / 2))
-                                                p1.loc.cur_y = SCREENHEIGHT - (SPRITE_HEIGHT / 2);
-                                        update_current_texture(p1);
-                                        break;
-
-                                case sf::Keyboard::Key::Down:
-                                        p1.loc.cur_y += p1.loc.dy;
-                                        if (p1.loc.cur_y + (SPRITE_HEIGHT / 2) > SCREENHEIGHT)
-                                                p1.loc.cur_y = -(SPRITE_HEIGHT / 2);
-                                        update_current_texture(p1);
-                                        break;
-
-                                case sf::Keyboard::Key::Left:
-                                        p1.loc.cur_x -= p1.loc.dx;
-                                        if (p1.loc.cur_x < -(SPRITE_WIDTH / 2))
-                                                p1.loc.cur_x = SCREENWIDTH - (SPRITE_WIDTH / 2);
-                                        update_current_texture(p1);
-                                        break;
-
-                                case sf::Keyboard::Key::Right:
-                                        p1.loc.cur_x += p1.loc.dx;
-                                        if (p1.loc.cur_x + (SPRITE_WIDTH / 2) > SCREENWIDTH)
-                                                p1.loc.cur_x = -(SPRITE_WIDTH / 2);
-                                        update_current_texture(p1);
-                                        break;
-                                default:
-                                        break;
-                                }
-                        }
+                        if (event.type == sf::Event::KeyPressed)
+                                handle_key_code(event.key.code, screen, p1);
                 }
 #ifdef DEBUG
-                printf("(X:%f, Y:%f)\n", p1.loc.cur_x, p1.loc.cur_y);
+                printf("(X:%f, Y:%f)\n", game.p1.loc.pos_x, game.p1.loc.pos_y);
 #endif // DEBUG
-                p1.sprite.setPosition(p1.loc.cur_x, p1.loc.cur_y);
-                window.clear(sf::Color::White);
-                window.draw(p1.sprite);
-                window.display();
+                p1.getSprite().setPosition(p1.curX(), p1.curY());
+                screen.window.clear(sf::Color::White);
+                screen.window.draw(p1.getSprite());
+                screen.window.display();
         }
 
-        return EXIT_SUCCESS;
+        return 0;
 }
 
 
-bool init_player(Character& player, const std::vector<std::string>& sprite_file_loc, float height, float width)
+void handle_key_code(sf::Keyboard::Key code, const Screen& screen, Character& p1)
 {
-        sf::Color color(0, 0, 0, 0);
-        float x, y;
+        float sprite_height = p1.getScaleHeight();
+        float sprite_width = p1.getScaleWidth();
 
-        x = (float)gcd(SCREENWIDTH, width);
-        y = (float)gcd(SCREENHEIGHT, height);
-        player.loc.dy = player.loc.dx = (float)gcd(x, y);
+        int screen_height = screen.getDesktop().height;
+        int screen_width = screen.getDesktop().width;
 
-        player.state = 0;
-        for (int i = 0; i < sprite_file_loc.size(); i++) {
-                sf::Texture texture;
-                if (!texture.loadFromFile(sprite_file_loc[i]))
-                        return false;
-                texture.setSrgb(true);
-                texture.setSmooth(true);
+        float pos_y = p1.curY();
+        float pos_x = p1.curX();
 
-                player.texture.push_back(texture);
+        float dy = p1.getDy();
+        float dx = p1.getDx();
+
+        switch (code) {
+        case sf::Keyboard::Key::Up:
+                pos_y = (pos_y - dy < -(sprite_height / 2)) ?
+                        (screen_height - (sprite_height / 2)) :
+                        (pos_y - dy);
+                break;
+
+        case sf::Keyboard::Key::Down:
+                pos_y = (pos_y + dy + (sprite_height / 2) > screen_height) ?
+                        -(sprite_height / 2) :
+                        (pos_y + dy);
+                break;
+
+        case sf::Keyboard::Key::Left:
+                pos_x = (pos_x - dx < -(sprite_width / 2)) ?
+                        (screen_width - (sprite_width / 2)) :
+                        (pos_x - dx);
+                break;
+
+        case sf::Keyboard::Key::Right:
+                pos_x = (pos_x + dx + (sprite_width / 2) > screen_width) ?
+                        -(sprite_width / 2) :
+                        (pos_x + dx);
+                break;
+        default:
+                return;
         }
 
-        update_current_texture(player);
-
-        player.sprite.setScale((width / player.texture[player.state].getSize().x),
-                (height / player.texture[player.state].getSize().y));
-
-        return true;
+        p1.setCurX(pos_x);
+        p1.setCurY(pos_y);
+        p1.update_texture_state();
 }
 
-void update_current_texture(Character& player)
+void init_player_speed(Character& player, const Screen& screen)
 {
-        player.sprite.setTexture(player.texture[player.state]);
-        player.state = ++player.state % player.texture.size();
+        float x, y, dxy;
+
+        x = (float)gcd(screen.getDesktop().width, player.getScaleWidth());
+        y = (float)gcd(screen.getDesktop().height, player.getScaleHeight());
+
+        dxy = (float)gcd(x, y) / 4;
+
+        player.setDy(dxy);
+        player.setDx(dxy);
 }
 
 int gcd(int a, int b)
