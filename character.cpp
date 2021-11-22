@@ -4,7 +4,7 @@
 
 Character::Character(const std::vector<std::string>& sprite_file_loc,
         float scale_height, float scale_width,
-        float pos_x, float pos_y)
+        const sf::Vector2f loc)
 {
         this->state = 0;
         for (int i = 0; i < sprite_file_loc.size(); i++) {
@@ -16,8 +16,6 @@ Character::Character(const std::vector<std::string>& sprite_file_loc,
                 this->texture.push_back(texture);
         }
 
-        this->pos_x = pos_x;
-        this->pos_y = pos_y;
         this->scale_height = scale_height;
         this->scale_width = scale_width;
 
@@ -27,8 +25,9 @@ Character::Character(const std::vector<std::string>& sprite_file_loc,
                 (scale_width / texture[state].getSize().x),
                 (scale_height / texture[state].getSize().y)
         );
-}
 
+        sprite.setPosition(loc);
+}
 
 void Character::update_texture_state()
 {
@@ -39,11 +38,4 @@ void Character::update_texture_state()
 
         next_state = ++state % this->texture.size();
         setState(next_state);
-}
-
-sf::Texture& Character::getTexture() const
-{
-        sf::Texture* texture = &texture[getState()];
-
-        return texture[getState()];
 }

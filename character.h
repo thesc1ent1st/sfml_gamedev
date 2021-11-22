@@ -10,7 +10,7 @@ class Character {
 public:
         Character(const std::vector<std::string>& sprite_file_loc,
                 float sprite_height, float sprite_width,
-                float pos_x, float pos_y);
+                const sf::Vector2f loc);
 
         void update_texture_state();
 
@@ -20,25 +20,20 @@ public:
         float getDx() const { return dx; }
         void setDx(float dx_) { dx = dx_; }
 
-        float curX() const { return pos_x; }
-        void setCurX(float curX) { pos_x = curX; }
-
-        float curY() const { return pos_y; }
-        void setCurY(float curY) { pos_y = curY; }
-
         size_t getState() const { return state; }
         void setState(const size_t& state_) { state = state_; }
 
-        sf::Sprite getSprite() const { return sprite; }
-        sf::Texture& getTexture() const;
+        sf::Sprite& getSprite() { return sprite; }
         float getScaleWidth() const { return scale_width; }
         float getScaleHeight() const { return scale_height; }
+
+        sf::Texture& getTexture() { return texture[this->getState()]; }
 
 private:
         std::vector<sf::Texture> texture;
         sf::Sprite sprite;
         size_t state;
-        float scale_height, scale_width, pos_x, pos_y, dx, dy;
+        float scale_height, scale_width, dx, dy;
 };
 
 #endif // __CHARACTER_H__

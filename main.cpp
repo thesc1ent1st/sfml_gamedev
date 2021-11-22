@@ -22,17 +22,23 @@ std::vector<std::string> p1_sprite_path = {
 
 int gcd(int a, int b);
 void handle_key_code(sf::Keyboard::Key code, const Screen& screen, Character& p1);
+void init_player_speed(Character& player, const Screen& screen);
 
 int main(int argc, char** argv)
 {
         sf::Music music;
+        sf::Vector2f p1_start_loc = {
+                0.0, 0.0
+        };
 
         Screen screen("Ginga Ninja");
-        Character p1(p1_sprite_path, 64.0, 64.0, 0, 0);
+        Character p1(p1_sprite_path, 64.0, 64.0, p1_start_loc);
+
         if (!music.openFromFile("./music/No6.ogg"))
                 return EXIT_FAILURE;
 
         music.play();
+        init_player_speed(p1, screen);
         while (screen.window.isOpen()) {
                 sf::Event event;
                 while (screen.window.pollEvent(event)) {
@@ -42,10 +48,8 @@ int main(int argc, char** argv)
                         if (event.type == sf::Event::KeyPressed)
                                 handle_key_code(event.key.code, screen, p1);
                 }
-#ifdef DEBUG
-                printf("(X:%f, Y:%f)\n", game.p1.loc.pos_x, game.p1.loc.pos_y);
-#endif // DEBUG
-                p1.getSprite().setPosition(p1.curX(), p1.curY());
+
+                printf("(X:%f, Y:%f)\n", p1.getSprite().getPosition().x, p1.getSprite().getPosition().y);
                 screen.window.clear(sf::Color::White);
                 screen.window.draw(p1.getSprite());
                 screen.window.display();
@@ -53,7 +57,6 @@ int main(int argc, char** argv)
 
         return 0;
 }
-
 
 void handle_key_code(sf::Keyboard::Key code, const Screen& screen, Character& p1)
 {
@@ -63,42 +66,44 @@ void handle_key_code(sf::Keyboard::Key code, const Screen& screen, Character& p1
         int screen_height = screen.getDesktop().height;
         int screen_width = screen.getDesktop().width;
 
-        float pos_y = p1.curY();
-        float pos_x = p1.curX();
-
         float dy = p1.getDy();
         float dx = p1.getDx();
 
+        sf::Vector2f v2f_current = p1.getSprite().getPosition();
+        sf::Vector2f v2f_next;
+
+        v2f_next.x = v2f_current.x;
+        v2f_next.y = v2f_current.y;
+
         switch (code) {
         case sf::Keyboard::Key::Up:
-                pos_y = (pos_y - dy < -(sprite_height / 2)) ?
+                v2f_next.y = (v2f_current.y - dy < -(sprite_height / 2)) ?
                         (screen_height - (sprite_height / 2)) :
-                        (pos_y - dy);
+                        (v2f_current.y - dy);
                 break;
 
         case sf::Keyboard::Key::Down:
-                pos_y = (pos_y + dy + (sprite_height / 2) > screen_height) ?
+                v2f_next.y = (v2f_current.y + dy + (sprite_height / 2) > screen_height) ?
                         -(sprite_height / 2) :
-                        (pos_y + dy);
+                        (v2f_current.y + dy);
                 break;
 
         case sf::Keyboard::Key::Left:
-                pos_x = (pos_x - dx < -(sprite_width / 2)) ?
+                v2f_next.x = (v2f_current.x - dx < -(sprite_width / 2)) ?
                         (screen_width - (sprite_width / 2)) :
-                        (pos_x - dx);
+                        (v2f_current.x - dx);
                 break;
 
         case sf::Keyboard::Key::Right:
-                pos_x = (pos_x + dx + (sprite_width / 2) > screen_width) ?
+                v2f_next.x = (v2f_current.x + dx + (sprite_width / 2) > screen_width) ?
                         -(sprite_width / 2) :
-                        (pos_x + dx);
+                        (v2f_current.x + dx);
                 break;
         default:
                 return;
         }
 
-        p1.setCurX(pos_x);
-        p1.setCurY(pos_y);
+        p1.getSprite().setPosition(v2f_next);
         p1.update_texture_state();
 }
 
